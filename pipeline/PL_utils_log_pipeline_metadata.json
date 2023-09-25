@@ -1,0 +1,268 @@
+{
+	"name": "PL_utils_log_pipeline_metadata",
+	"properties": {
+		"description": "Log Pipeline run information (Metadata)",
+		"activities": [
+			{
+				"name": "Test Status",
+				"description": "Test the Status for \"Success\" or \"Failed\"",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.status,'Success')",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "Set status and send message",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "Log Pipeline Run information Metadata Failed",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "PL_util_set_status_message",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"status": {
+										"value": "@pipeline().parameters.status",
+										"type": "Expression"
+									},
+									"triggeredPipeline": {
+										"value": "@pipeline().parameters.pipelineName",
+										"type": "Expression"
+									},
+									"systemCode": {
+										"value": "@pipeline().parameters.systemCode",
+										"type": "Expression"
+									},
+									"datasetName": {
+										"value": "@pipeline().parameters.datasetName",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "Log Pipeline Run information Metadata Failed",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.00:10:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[InsertPipelineLog]",
+								"storedProcedureParameters": {
+									"EndTime": {
+										"value": {
+											"value": "@convertFromUtc(utcnow(),'SA Pacific Standard Time')",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"PipelineID": {
+										"value": {
+											"value": "@pipeline().parameters.pipelineID",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@pipeline().parameters.pipelineName",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"RunID": {
+										"value": {
+											"value": "@pipeline().parameters.runID",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"SnapshotDate": {
+										"value": {
+											"value": "@pipeline().parameters.snapshotDate",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"SourceToTargetID": {
+										"value": {
+											"value": "@pipeline().parameters.sourceToTargetID2",
+											"type": "Expression"
+										},
+										"type": "Int32"
+									},
+									"StartTime": {
+										"value": {
+											"value": "@pipeline().parameters.pipelineTriggerTime",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"Status": {
+										"value": {
+											"value": "@pipeline().parameters.status",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"UpdateAt": {
+										"value": {
+											"value": "@convertFromUtc(utcnow(),'SA Pacific Standard Time')",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_asql_data_engineering_metadata",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "Log Pipeline Run information Metadata Success",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.00:10:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[InsertPipelineLog]",
+								"storedProcedureParameters": {
+									"EndTime": {
+										"value": {
+											"value": "@convertFromUtc(utcnow(),'SA Pacific Standard Time')",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"PipelineID": {
+										"value": {
+											"value": "@pipeline().parameters.pipelineID",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"PipelineName": {
+										"value": {
+											"value": "@pipeline().parameters.pipelineName",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"RunID": {
+										"value": {
+											"value": "@pipeline().parameters.runID",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"SnapshotDate": {
+										"value": {
+											"value": "@pipeline().parameters.snapshotDate",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"SourceToTargetID": {
+										"value": {
+											"value": "@pipeline().parameters.sourceToTargetID2",
+											"type": "Expression"
+										},
+										"type": "Int32"
+									},
+									"StartTime": {
+										"value": {
+											"value": "@pipeline().parameters.pipelineTriggerTime",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"Status": {
+										"value": {
+											"value": "@pipeline().parameters.status",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"UpdateAt": {
+										"value": {
+											"value": "@convertFromUtc(utcnow(),'SA Pacific Standard Time')",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_asql_data_engineering_metadata",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"snapshotDate": {
+				"type": "string"
+			},
+			"status": {
+				"type": "string"
+			},
+			"runID": {
+				"type": "string"
+			},
+			"sourceToTargetID2": {
+				"type": "int"
+			},
+			"pipelineTriggerTime": {
+				"type": "string"
+			},
+			"pipelineID": {
+				"type": "string"
+			},
+			"pipelineName": {
+				"type": "string"
+			},
+			"systemCode": {
+				"type": "string"
+			},
+			"datasetName": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Utility"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-09-25T02:38:24Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

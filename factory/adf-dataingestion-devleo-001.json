@@ -1,0 +1,9 @@
+{
+	"name": "adf-dataingestion-devleo-001",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "9dc6f3eb-ecf8-4a44-be0d-2d196299f484",
+		"tenantId": "855b093e-7340-45c7-9f0c-96150415893e"
+	}
+}

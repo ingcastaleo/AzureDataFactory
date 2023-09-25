@@ -1,0 +1,121 @@
+{
+	"name": "PL_util_send_email_notifications",
+	"properties": {
+		"description": "Utility pipeline that sends email notifications.",
+		"activities": [
+			{
+				"name": "Get Email Addresses",
+				"description": "Get the email recipients for a specific systemCode and Dataset Name",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[GetEmailAddresses]",
+						"storedProcedureParameters": {
+							"DatasetName": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.datasetName",
+									"type": "Expression"
+								}
+							},
+							"SystemCode": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.systemCode",
+									"type": "Expression"
+								}
+							}
+						},
+						"queryTimeout": "00:10:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_asql_email_addresses",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"description": "Send a message to each email address",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Get Email Addresses",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Get Email Addresses').output.value",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "Send Email",
+							"description": "Send E-Mail Notification",
+							"type": "WebActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.00:10:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"url": "https://app-adf-dataingestion-email-leo.azurewebsites.net:443/api/email/triggers/When_a_HTTP_request_is_received/invoke?api-version=2022-05-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=miFXm-3XKrQgGbovsjG1gCbwmW6Bwu2zHGZRLE08mlQ",
+								"method": "POST",
+								"headers": {
+									"Content-Type": "application/json"
+								},
+								"body": {
+									"value": "@json(concat('{\n    \"emailAddress\": \"',item().emailAddress,'\",\n    \"subject\": \"',pipeline().parameters.subject,'\", \n    \"messagebody\":\"',pipeline().parameters.message,'\"\n    }'\n    ))",
+									"type": "Expression"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"systemCode": {
+				"type": "string",
+				"defaultValue": "OWS"
+			},
+			"datasetName": {
+				"type": "string",
+				"defaultValue": "Sales"
+			},
+			"subject": {
+				"type": "string"
+			},
+			"message": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Utility"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-09-24T21:15:41Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
