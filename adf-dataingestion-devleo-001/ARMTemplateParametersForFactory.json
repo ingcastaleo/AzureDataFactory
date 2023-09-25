@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-dataingestion-devleo-001"
+		},
+		"LS_abls_buyalot_webstore_connectionString": {
+			"value": ""
+		},
+		"LS_adls_data_engineering_dl_accountKey": {
+			"value": ""
+		},
+		"LS_asql_data_engineering_metadata_connectionString": {
+			"value": ""
+		},
+		"LS_adls_data_engineering_dl_properties_typeProperties_url": {
+			"value": "https://sgdedatalakedevleo001.dfs.core.windows.net/"
+		}
+	}
+}
