@@ -1,0 +1,24 @@
+{
+	"name": "TRG_ingest_uploaded_files",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "PL_data_ingestion_adhoc_csv",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/finance/blobs/",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/6e933e6b-6ad2-4b17-a3d3-350f6f2f75aa/resourceGroups/rg-webdevelopment-dev-001/providers/Microsoft.Storage/storageAccounts/stwebstoredataleo001",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}
