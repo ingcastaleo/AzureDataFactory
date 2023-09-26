@@ -75,6 +75,62 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/DS_abls_buyalot_files_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_abls_buyalot_webstore",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string",
+						"defaultValue": "finance"
+					},
+					"fileName": {
+						"type": "string",
+						"defaultValue": "finance.csv"
+					}
+				},
+				"folder": {
+					"name": "webstore"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().fileName",
+							"type": "Expression"
+						},
+						"container": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "DepartmentCode",
+						"type": "String"
+					},
+					{
+						"name": "DepartmentGroupName",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_abls_buyalot_webstore')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/DS_abls_buyalot_files_json')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -118,6 +174,54 @@
 					}
 				},
 				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_abls_buyalot_webstore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_abls_buyalot_files_metadata_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_abls_buyalot_webstore",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string",
+						"defaultValue": "finance"
+					}
+				},
+				"folder": {
+					"name": "webstore"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "DepartmentCode",
+						"type": "String"
+					},
+					{
+						"name": "DepartmentGroupName",
+						"type": "String"
+					}
+				]
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_abls_buyalot_webstore')]"
@@ -218,6 +322,58 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_abls_buyalot_webstore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_adls_data_engineering_folder_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_adls_data_engineering_dl",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string",
+						"defaultValue": "finance"
+					},
+					"folder": {
+						"type": "string",
+						"defaultValue": "raw/finance"
+					},
+					"fileName": {
+						"type": "string",
+						"defaultValue": "finance.csv"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().fileName",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().folder",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_adls_data_engineering_dl')]"
 			]
 		},
 		{
@@ -525,6 +681,204 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_asql_data_engineering_metadata')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_data_ingestion_adhoc_csv')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "ingest event-driven (adhoc) csv files to the data engineering datalake",
+				"activities": [
+					{
+						"name": "Get Container Metadata",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.00:10:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DS_abls_buyalot_files_metadata_csv",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": {
+										"value": "@pipeline().parameters.sourceContainer",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"itemName",
+								"lastModified",
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Filter By Filetype",
+						"type": "Filter",
+						"dependsOn": [
+							{
+								"activity": "Get Container Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Container Metadata').output.childItems",
+								"type": "Expression"
+							},
+							"condition": {
+								"value": "@endswith(item().name,concat('.',pipeline().parameters.fileType))",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "ForEach CSV File Ingest to Data Lake",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Filter By Filetype",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Filter By Filetype').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy csv file into de datalake",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.00:10:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_abls_buyalot_files_csv",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": {
+													"value": "@pipeline().parameters.sourceContainer",
+													"type": "Expression"
+												},
+												"fileName": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_adls_data_engineering_folder_csv",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": {
+													"value": "@pipeline().parameters.targetContainer",
+													"type": "Expression"
+												},
+												"folder": {
+													"value": "@concat('raw',\n'/', \nsubstring(item().name,0, indexof(item().name,'.')),\n'/',\nformatDateTime(convertFromUtc(utcnow(), 'South Africa Standard Time'), 'yyyy-MM-dd'),\n'/',\nformatDateTime(convertFromUtc(utcnow(), 'South Africa Standard Time'), 'HH'),\n'/',\nformatDateTime(convertFromUtc(utcnow(), 'South Africa Standard Time'), 'mm'),\n'/',\nformatDateTime(convertFromUtc(utcnow(), 'South Africa Standard Time'), 'ss')\n)",
+													"type": "Expression"
+												},
+												"fileName": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"sourceContainer": {
+						"type": "string",
+						"defaultValue": "finance"
+					},
+					"fileType": {
+						"type": "string",
+						"defaultValue": "csv"
+					},
+					"targetContainer": {
+						"type": "string",
+						"defaultValue": "finance"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_abls_buyalot_files_metadata_csv')]",
+				"[concat(variables('factoryId'), '/datasets/DS_abls_buyalot_files_csv')]",
+				"[concat(variables('factoryId'), '/datasets/DS_adls_data_engineering_folder_csv')]"
 			]
 		},
 		{
@@ -1322,1070 +1676,6 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/PL_util_send_email_notifications')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/PL_utils_log_pipeline_metadata')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "Log Pipeline run information (Metadata)",
-				"activities": [
-					{
-						"name": "Test Status",
-						"description": "Test the Status for \"Success\" or \"Failed\"",
-						"type": "IfCondition",
-						"dependsOn": [],
-						"userProperties": [],
-						"typeProperties": {
-							"expression": {
-								"value": "@equals(pipeline().parameters.status,'Success')",
-								"type": "Expression"
-							},
-							"ifFalseActivities": [
-								{
-									"name": "Set status and send message",
-									"type": "ExecutePipeline",
-									"dependsOn": [
-										{
-											"activity": "Log Pipeline Run information Metadata Failed",
-											"dependencyConditions": [
-												"Succeeded"
-											]
-										}
-									],
-									"userProperties": [],
-									"typeProperties": {
-										"pipeline": {
-											"referenceName": "PL_util_set_status_message",
-											"type": "PipelineReference"
-										},
-										"waitOnCompletion": true,
-										"parameters": {
-											"status": {
-												"value": "@pipeline().parameters.status",
-												"type": "Expression"
-											},
-											"triggeredPipeline": {
-												"value": "@pipeline().parameters.pipelineName",
-												"type": "Expression"
-											},
-											"systemCode": {
-												"value": "@pipeline().parameters.systemCode",
-												"type": "Expression"
-											},
-											"datasetName": {
-												"value": "@pipeline().parameters.datasetName",
-												"type": "Expression"
-											}
-										}
-									}
-								},
-								{
-									"name": "Log Pipeline Run information Metadata Failed",
-									"type": "SqlServerStoredProcedure",
-									"dependsOn": [],
-									"policy": {
-										"timeout": "0.00:10:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"storedProcedureName": "[[dbo].[InsertPipelineLog]",
-										"storedProcedureParameters": {
-											"EndTime": {
-												"value": {
-													"value": "@convertFromUtc(utcnow(),'SA Pacific Standard Time')",
-													"type": "Expression"
-												},
-												"type": "DateTime"
-											},
-											"PipelineID": {
-												"value": {
-													"value": "@pipeline().parameters.pipelineID",
-													"type": "Expression"
-												},
-												"type": "String"
-											},
-											"PipelineName": {
-												"value": {
-													"value": "@pipeline().parameters.pipelineName",
-													"type": "Expression"
-												},
-												"type": "String"
-											},
-											"RunID": {
-												"value": {
-													"value": "@pipeline().parameters.runID",
-													"type": "Expression"
-												},
-												"type": "String"
-											},
-											"SnapshotDate": {
-												"value": {
-													"value": "@pipeline().parameters.snapshotDate",
-													"type": "Expression"
-												},
-												"type": "DateTime"
-											},
-											"SourceToTargetID": {
-												"value": {
-													"value": "@pipeline().parameters.sourceToTargetID2",
-													"type": "Expression"
-												},
-												"type": "Int32"
-											},
-											"StartTime": {
-												"value": {
-													"value": "@pipeline().parameters.pipelineTriggerTime",
-													"type": "Expression"
-												},
-												"type": "DateTime"
-											},
-											"Status": {
-												"value": {
-													"value": "@pipeline().parameters.status",
-													"type": "Expression"
-												},
-												"type": "String"
-											},
-											"UpdateAt": {
-												"value": {
-													"value": "@convertFromUtc(utcnow(),'SA Pacific Standard Time')",
-													"type": "Expression"
-												},
-												"type": "DateTime"
-											}
-										}
-									},
-									"linkedServiceName": {
-										"referenceName": "LS_asql_data_engineering_metadata",
-										"type": "LinkedServiceReference"
-									}
-								}
-							],
-							"ifTrueActivities": [
-								{
-									"name": "Log Pipeline Run information Metadata Success",
-									"type": "SqlServerStoredProcedure",
-									"dependsOn": [],
-									"policy": {
-										"timeout": "0.00:10:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"storedProcedureName": "[[dbo].[InsertPipelineLog]",
-										"storedProcedureParameters": {
-											"EndTime": {
-												"value": {
-													"value": "@convertFromUtc(utcnow(),'SA Pacific Standard Time')",
-													"type": "Expression"
-												},
-												"type": "DateTime"
-											},
-											"PipelineID": {
-												"value": {
-													"value": "@pipeline().parameters.pipelineID",
-													"type": "Expression"
-												},
-												"type": "String"
-											},
-											"PipelineName": {
-												"value": {
-													"value": "@pipeline().parameters.pipelineName",
-													"type": "Expression"
-												},
-												"type": "String"
-											},
-											"RunID": {
-												"value": {
-													"value": "@pipeline().parameters.runID",
-													"type": "Expression"
-												},
-												"type": "String"
-											},
-											"SnapshotDate": {
-												"value": {
-													"value": "@pipeline().parameters.snapshotDate",
-													"type": "Expression"
-												},
-												"type": "DateTime"
-											},
-											"SourceToTargetID": {
-												"value": {
-													"value": "@pipeline().parameters.sourceToTargetID2",
-													"type": "Expression"
-												},
-												"type": "Int32"
-											},
-											"StartTime": {
-												"value": {
-													"value": "@pipeline().parameters.pipelineTriggerTime",
-													"type": "Expression"
-												},
-												"type": "DateTime"
-											},
-											"Status": {
-												"value": {
-													"value": "@pipeline().parameters.status",
-													"type": "Expression"
-												},
-												"type": "String"
-											},
-											"UpdateAt": {
-												"value": {
-													"value": "@convertFromUtc(utcnow(),'SA Pacific Standard Time')",
-													"type": "Expression"
-												},
-												"type": "DateTime"
-											}
-										}
-									},
-									"linkedServiceName": {
-										"referenceName": "LS_asql_data_engineering_metadata",
-										"type": "LinkedServiceReference"
-									}
-								}
-							]
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
-				"parameters": {
-					"snapshotDate": {
-						"type": "string"
-					},
-					"status": {
-						"type": "string"
-					},
-					"runID": {
-						"type": "string"
-					},
-					"sourceToTargetID2": {
-						"type": "int"
-					},
-					"pipelineTriggerTime": {
-						"type": "string"
-					},
-					"pipelineID": {
-						"type": "string"
-					},
-					"pipelineName": {
-						"type": "string"
-					},
-					"systemCode": {
-						"type": "string"
-					},
-					"datasetName": {
-						"type": "string"
-					}
-				},
-				"folder": {
-					"name": "Utility"
-				},
-				"annotations": [],
-				"lastPublishTime": "2023-09-25T02:38:24Z"
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/PL_util_set_status_message')]",
-				"[concat(variables('factoryId'), '/linkedServices/LS_asql_data_engineering_metadata')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/PL_data_ingestion_json_v5')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "Ingest webstore online sales data into the Data Lake",
-				"activities": [
-					{
-						"name": "Copy Web Store Online Sales Data",
-						"description": "Copy Online Sales Data from the Web Store and Ingest to Data Lake",
-						"type": "Copy",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.00:10:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "JsonSource",
-								"storeSettings": {
-									"type": "AzureBlobStorageReadSettings",
-									"recursive": true,
-									"enablePartitionDiscovery": false
-								},
-								"formatSettings": {
-									"type": "JsonReadSettings"
-								}
-							},
-							"sink": {
-								"type": "JsonSink",
-								"storeSettings": {
-									"type": "AzureBlobFSWriteSettings"
-								},
-								"formatSettings": {
-									"type": "JsonWriteSettings"
-								}
-							},
-							"enableStaging": false
-						},
-						"inputs": [
-							{
-								"referenceName": "DS_abls_buyalot_json",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "DS_adls_data_engineering_json",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						]
-					},
-					{
-						"name": "Set Success Satus",
-						"type": "SetVariable",
-						"dependsOn": [
-							{
-								"activity": "Copy Web Store Online Sales Data",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "v_status",
-							"value": "Success"
-						}
-					},
-					{
-						"name": "Set Failed Satus",
-						"type": "SetVariable",
-						"dependsOn": [
-							{
-								"activity": "Copy Web Store Online Sales Data",
-								"dependencyConditions": [
-									"Failed"
-								]
-							}
-						],
-						"policy": {
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "v_status",
-							"value": "Failed"
-						}
-					},
-					{
-						"name": "Log Pipeline Metadata - Success",
-						"type": "ExecutePipeline",
-						"dependsOn": [
-							{
-								"activity": "Set Success Satus",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"userProperties": [],
-						"typeProperties": {
-							"pipeline": {
-								"referenceName": "PL_utils_log_pipeline_metadata",
-								"type": "PipelineReference"
-							},
-							"waitOnCompletion": true,
-							"parameters": {
-								"snapshotDate": {
-									"value": "@formatDateTime(pipeline().parameters.snapshotDate,'yyyy-MM-dd')",
-									"type": "Expression"
-								},
-								"status": {
-									"value": "@variables('v_status')",
-									"type": "Expression"
-								},
-								"runID": {
-									"value": "@pipeline().parameters.runID",
-									"type": "Expression"
-								},
-								"sourceToTargetID2": {
-									"value": "2",
-									"type": "Expression"
-								},
-								"pipelineTriggerTime": {
-									"value": "@convertFromUtc(pipeline().TriggerTime,'SA Pacific Standard Time')",
-									"type": "Expression"
-								},
-								"pipelineID": {
-									"value": "@pipeline().RunId",
-									"type": "Expression"
-								},
-								"pipelineName": {
-									"value": "@pipeline().Pipeline",
-									"type": "Expression"
-								},
-								"systemCode": {
-									"value": "@pipeline().parameters.systemCode",
-									"type": "Expression"
-								},
-								"datasetName": {
-									"value": "@pipeline().parameters.datasetName",
-									"type": "Expression"
-								}
-							}
-						}
-					},
-					{
-						"name": "Log Pipeline Metadata - Failed",
-						"type": "ExecutePipeline",
-						"dependsOn": [
-							{
-								"activity": "Set Failed Satus",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"userProperties": [],
-						"typeProperties": {
-							"pipeline": {
-								"referenceName": "PL_utils_log_pipeline_metadata",
-								"type": "PipelineReference"
-							},
-							"waitOnCompletion": true,
-							"parameters": {
-								"snapshotDate": {
-									"value": "@formatDateTime(pipeline().parameters.snapshotDate,'yyyy-MM-dd')",
-									"type": "Expression"
-								},
-								"status": {
-									"value": "@variables('v_status')",
-									"type": "Expression"
-								},
-								"runID": {
-									"value": "@pipeline().parameters.runID",
-									"type": "Expression"
-								},
-								"sourceToTargetID2": {
-									"value": "2",
-									"type": "Expression"
-								},
-								"pipelineTriggerTime": {
-									"value": "@convertFromUtc(pipeline().TriggerTime,'SA Pacific Standard Time')",
-									"type": "Expression"
-								},
-								"pipelineID": {
-									"value": "@pipeline().RunId",
-									"type": "Expression"
-								},
-								"pipelineName": {
-									"value": "@pipeline().Pipeline",
-									"type": "Expression"
-								},
-								"systemCode": {
-									"value": "@pipeline().parameters.systemCode",
-									"type": "Expression"
-								},
-								"datasetName": {
-									"value": "@pipeline().parameters.datasetName",
-									"type": "Expression"
-								}
-							}
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
-				"parameters": {
-					"systemCode": {
-						"type": "string",
-						"defaultValue": "OWS"
-					},
-					"datasetName": {
-						"type": "string",
-						"defaultValue": "Sales"
-					},
-					"runID": {
-						"type": "string",
-						"defaultValue": "1"
-					},
-					"snapshotDate": {
-						"type": "string",
-						"defaultValue": "2021-07-11"
-					}
-				},
-				"variables": {
-					"v_status": {
-						"type": "String",
-						"defaultValue": "Success"
-					}
-				},
-				"folder": {
-					"name": "Building the Pipeline"
-				},
-				"annotations": [],
-				"lastPublishTime": "2023-09-25T17:56:02Z"
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/DS_abls_buyalot_json')]",
-				"[concat(variables('factoryId'), '/datasets/DS_adls_data_engineering_json')]",
-				"[concat(variables('factoryId'), '/pipelines/PL_utils_log_pipeline_metadata')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/PL_data_ingestion_json_v6')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "Ingest webstore online sales data into the Data Lake",
-				"activities": [
-					{
-						"name": "Get Source To Target Details",
-						"type": "Lookup",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.00:10:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "AzureSqlSource",
-								"sqlReaderStoredProcedureName": "[[dbo].[GetSourceToTargetInfo]",
-								"storedProcedureParameters": {
-									"Dataset": {
-										"type": "String",
-										"value": {
-											"value": "@pipeline().parameters.datasetName",
-											"type": "Expression"
-										}
-									},
-									"SourceSystemCode": {
-										"type": "String",
-										"value": {
-											"value": "@pipeline().parameters.systemCode",
-											"type": "Expression"
-										}
-									},
-									"Stage": {
-										"type": "String",
-										"value": {
-											"value": "@variables('v_stage')",
-											"type": "Expression"
-										}
-									}
-								},
-								"queryTimeout": "00:10:00",
-								"partitionOption": "None"
-							},
-							"dataset": {
-								"referenceName": "DS_asql_source_to_target_details",
-								"type": "DatasetReference",
-								"parameters": {}
-							},
-							"firstRowOnly": false
-						}
-					},
-					{
-						"name": "ForEach Source To Target Info",
-						"type": "ForEach",
-						"dependsOn": [
-							{
-								"activity": "Get Source To Target Details",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"userProperties": [],
-						"typeProperties": {
-							"items": {
-								"value": "@activity('Get Source To Target Details').output.value",
-								"type": "Expression"
-							},
-							"isSequential": false,
-							"activities": [
-								{
-									"name": "Copy Web Store Online Sales Data",
-									"description": "Copy Online Sales Data from the Web Store and Ingest to Data Lake",
-									"type": "Copy",
-									"dependsOn": [],
-									"policy": {
-										"timeout": "0.00:10:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"source": {
-											"type": "JsonSource",
-											"storeSettings": {
-												"type": "AzureBlobStorageReadSettings",
-												"recursive": true,
-												"enablePartitionDiscovery": false
-											},
-											"formatSettings": {
-												"type": "JsonReadSettings"
-											}
-										},
-										"sink": {
-											"type": "JsonSink",
-											"storeSettings": {
-												"type": "AzureBlobFSWriteSettings"
-											},
-											"formatSettings": {
-												"type": "JsonWriteSettings"
-											}
-										},
-										"enableStaging": false
-									},
-									"inputs": [
-										{
-											"referenceName": "DS_abls_buyalot_files_json",
-											"type": "DatasetReference",
-											"parameters": {
-												"container": {
-													"value": "@item().SourceContainer",
-													"type": "Expression"
-												},
-												"directory": {
-													"value": "@item().SourceRelativePathSchema",
-													"type": "Expression"
-												},
-												"fileName": {
-													"value": "@item().SourceTechnicalName",
-													"type": "Expression"
-												}
-											}
-										}
-									],
-									"outputs": [
-										{
-											"referenceName": "DS_adls_data_engineering_folders_json",
-											"type": "DatasetReference",
-											"parameters": {
-												"container": {
-													"value": "@item().TargetContainer",
-													"type": "Expression"
-												},
-												"directory": {
-													"value": "@concat(item().TargetRelativePathSchema,'/',formatDateTime(pipeline().parameters.snapshotDate,'yyyy-MM-dd'))",
-													"type": "Expression"
-												},
-												"fileName": {
-													"value": "@item().TargetTechnicalName",
-													"type": "Expression"
-												}
-											}
-										}
-									]
-								},
-								{
-									"name": "Set Success Satus",
-									"type": "SetVariable",
-									"dependsOn": [
-										{
-											"activity": "Copy Web Store Online Sales Data",
-											"dependencyConditions": [
-												"Succeeded"
-											]
-										}
-									],
-									"policy": {
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"variableName": "v_status",
-										"value": "Success"
-									}
-								},
-								{
-									"name": "Set Failed Satus",
-									"type": "SetVariable",
-									"dependsOn": [
-										{
-											"activity": "Copy Web Store Online Sales Data",
-											"dependencyConditions": [
-												"Failed"
-											]
-										}
-									],
-									"policy": {
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"variableName": "v_status",
-										"value": "Failed"
-									}
-								},
-								{
-									"name": "Log Pipeline Metadata - Success",
-									"type": "ExecutePipeline",
-									"dependsOn": [
-										{
-											"activity": "Set Success Satus",
-											"dependencyConditions": [
-												"Succeeded"
-											]
-										}
-									],
-									"userProperties": [],
-									"typeProperties": {
-										"pipeline": {
-											"referenceName": "PL_utils_log_pipeline_metadata",
-											"type": "PipelineReference"
-										},
-										"waitOnCompletion": true,
-										"parameters": {
-											"snapshotDate": {
-												"value": "@formatDateTime(pipeline().parameters.snapshotDate,'yyyy-MM-dd')",
-												"type": "Expression"
-											},
-											"status": {
-												"value": "@variables('v_status')",
-												"type": "Expression"
-											},
-											"runID": {
-												"value": "@pipeline().parameters.runID",
-												"type": "Expression"
-											},
-											"sourceToTargetID2": {
-												"value": "@item().SourceToTargetID",
-												"type": "Expression"
-											},
-											"pipelineTriggerTime": {
-												"value": "@convertFromUtc(pipeline().TriggerTime,'SA Pacific Standard Time')",
-												"type": "Expression"
-											},
-											"pipelineID": {
-												"value": "@pipeline().RunId",
-												"type": "Expression"
-											},
-											"pipelineName": {
-												"value": "@pipeline().Pipeline",
-												"type": "Expression"
-											},
-											"systemCode": {
-												"value": "@pipeline().parameters.systemCode",
-												"type": "Expression"
-											},
-											"datasetName": {
-												"value": "@pipeline().parameters.datasetName",
-												"type": "Expression"
-											}
-										}
-									}
-								},
-								{
-									"name": "Log Pipeline Metadata - Failed",
-									"type": "ExecutePipeline",
-									"dependsOn": [
-										{
-											"activity": "Set Failed Satus",
-											"dependencyConditions": [
-												"Succeeded"
-											]
-										}
-									],
-									"userProperties": [],
-									"typeProperties": {
-										"pipeline": {
-											"referenceName": "PL_utils_log_pipeline_metadata",
-											"type": "PipelineReference"
-										},
-										"waitOnCompletion": true,
-										"parameters": {
-											"snapshotDate": {
-												"value": "@formatDateTime(pipeline().parameters.snapshotDate,'yyyy-MM-dd')",
-												"type": "Expression"
-											},
-											"status": {
-												"value": "@variables('v_status')",
-												"type": "Expression"
-											},
-											"runID": {
-												"value": "@pipeline().parameters.runID",
-												"type": "Expression"
-											},
-											"sourceToTargetID2": {
-												"value": "@item().SourceToTargetID",
-												"type": "Expression"
-											},
-											"pipelineTriggerTime": {
-												"value": "@convertFromUtc(pipeline().TriggerTime,'SA Pacific Standard Time')",
-												"type": "Expression"
-											},
-											"pipelineID": {
-												"value": "@pipeline().RunId",
-												"type": "Expression"
-											},
-											"pipelineName": {
-												"value": "@pipeline().Pipeline",
-												"type": "Expression"
-											},
-											"systemCode": {
-												"value": "@pipeline().parameters.systemCode",
-												"type": "Expression"
-											},
-											"datasetName": {
-												"value": "@pipeline().parameters.datasetName",
-												"type": "Expression"
-											}
-										}
-									}
-								}
-							]
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
-				"parameters": {
-					"systemCode": {
-						"type": "string",
-						"defaultValue": "OWS"
-					},
-					"datasetName": {
-						"type": "string",
-						"defaultValue": "Sales"
-					},
-					"runID": {
-						"type": "string",
-						"defaultValue": "1"
-					},
-					"snapshotDate": {
-						"type": "string",
-						"defaultValue": "2021-07-11"
-					}
-				},
-				"variables": {
-					"v_status": {
-						"type": "String",
-						"defaultValue": "Success"
-					},
-					"v_stage": {
-						"type": "String",
-						"defaultValue": "SOURCE_TO_RAW"
-					}
-				},
-				"annotations": [],
-				"lastPublishTime": "2023-09-25T05:33:01Z"
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/DS_asql_source_to_target_details')]",
-				"[concat(variables('factoryId'), '/datasets/DS_abls_buyalot_files_json')]",
-				"[concat(variables('factoryId'), '/datasets/DS_adls_data_engineering_folders_json')]",
-				"[concat(variables('factoryId'), '/pipelines/PL_utils_log_pipeline_metadata')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/PL_orch_daily_batch_run')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "Daily batch run orchestration of ingestion pipeline",
-				"activities": [
-					{
-						"name": "Get Batch Run Details",
-						"type": "Lookup",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.00:10:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "AzureSqlSource",
-								"sqlReaderStoredProcedureName": "[[dbo].[GetBatch]",
-								"storedProcedureParameters": {
-									"PFrequency": {
-										"type": "String",
-										"value": {
-											"value": "@variables('v_frequency')",
-											"type": "Expression"
-										}
-									},
-									"PSystemCode": {
-										"type": "String",
-										"value": {
-											"value": "@variables('v_systemcode')",
-											"type": "Expression"
-										}
-									}
-								},
-								"queryTimeout": "02:00:00",
-								"partitionOption": "None"
-							},
-							"dataset": {
-								"referenceName": "DS_asql_batch_details",
-								"type": "DatasetReference",
-								"parameters": {}
-							},
-							"firstRowOnly": false
-						}
-					},
-					{
-						"name": "ForEach Batch Run Information",
-						"type": "ForEach",
-						"dependsOn": [
-							{
-								"activity": "Get Batch Run Details",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"userProperties": [],
-						"typeProperties": {
-							"items": {
-								"value": "@activity('Get Batch Run Details').output.value",
-								"type": "Expression"
-							},
-							"isSequential": false,
-							"activities": [
-								{
-									"name": "Run Ingestion",
-									"type": "ExecutePipeline",
-									"dependsOn": [],
-									"userProperties": [],
-									"typeProperties": {
-										"pipeline": {
-											"referenceName": "PL_data_ingestion_json_v6",
-											"type": "PipelineReference"
-										},
-										"waitOnCompletion": true,
-										"parameters": {
-											"systemCode": {
-												"value": "@variables('v_systemcode')",
-												"type": "Expression"
-											},
-											"datasetName": {
-												"value": "@item().DatasetName",
-												"type": "Expression"
-											},
-											"runID": {
-												"value": "@item().RunID",
-												"type": "Expression"
-											},
-											"snapshotDate": {
-												"value": "@item().SnapshotDate",
-												"type": "Expression"
-											}
-										}
-									}
-								}
-							]
-						}
-					},
-					{
-						"name": "Set Batch Status",
-						"type": "SqlServerStoredProcedure",
-						"dependsOn": [
-							{
-								"activity": "ForEach Batch Run Information",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"policy": {
-							"timeout": "0.00:10:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"storedProcedureName": "[[dbo].[SetBatchStatus]",
-							"storedProcedureParameters": {
-								"PFrequency": {
-									"value": {
-										"value": "@variables('v_frequency')",
-										"type": "Expression"
-									},
-									"type": "String"
-								},
-								"PSystemCode": {
-									"value": {
-										"value": "@variables('v_systemcode')",
-										"type": "Expression"
-									},
-									"type": "String"
-								}
-							}
-						},
-						"linkedServiceName": {
-							"referenceName": "LS_asql_data_engineering_metadata",
-							"type": "LinkedServiceReference"
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
-				"variables": {
-					"v_frequency": {
-						"type": "String",
-						"defaultValue": "DAILY"
-					},
-					"v_systemcode": {
-						"type": "String",
-						"defaultValue": "OWS"
-					}
-				},
-				"folder": {
-					"name": "orchestration"
-				},
-				"annotations": [],
-				"lastPublishTime": "2023-09-25T05:48:47Z"
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/DS_asql_batch_details')]",
-				"[concat(variables('factoryId'), '/linkedServices/LS_asql_data_engineering_metadata')]",
-				"[concat(variables('factoryId'), '/pipelines/PL_data_ingestion_json_v6')]"
 			]
 		}
 	]
