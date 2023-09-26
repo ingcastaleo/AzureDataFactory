@@ -1,0 +1,56 @@
+{
+	"name": "PL_data_ingestion_adhoc_csv",
+	"properties": {
+		"description": "ingest event-driven (adhoc) csv files to the data engineering datalake",
+		"activities": [
+			{
+				"name": "Get Container Metadata",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "DS_abls_buyalot_files_metadata_csv",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.sourceContainer",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"itemName",
+						"lastModified",
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobStorageReadSettings",
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"sourceContainer": {
+				"type": "string",
+				"defaultValue": "finance"
+			},
+			"fileType": {
+				"type": "string",
+				"defaultValue": "csv"
+			}
+		},
+		"annotations": []
+	}
+}
